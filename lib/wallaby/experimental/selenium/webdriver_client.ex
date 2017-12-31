@@ -7,12 +7,41 @@ defmodule Wallaby.Experimental.Selenium.WebdriverClient do
   @type http_method :: :post | :get | :delete
   @type url :: String.t
 
+  @known [
+    :browser_name,
+    :browser_version,
+    :platform_name,
+    :accept_insecure_certs,
+    :page_load_strategy,
+    :proxy,
+    :set_window_rect,
+    :timeouts,
+    :unhandled_prompt_behavior,
+  ]
+
+  defp filter_capabilities_for_w3c(capabilities) do
+    capabilities
+    |> Enum.filter(fn {key, value} ->
+      Enum.member? @known, key
+    end)
+    |> Map.new
+  end
+
   @doc """
   Create a session with the base url.
   """
   @spec create_session(String.t, map) :: {:ok, map}
   def create_session(base_url, capabilities) do
-    params = %{desiredCapabilities: capabilities}
+
+    w3c_capabilities = filter_capabilities_for_w3c capabilities
+
+    params = %{
+               desiredCapabilities: capabilities,
+               capabilities: %{
+                 alwaysMatch: w3c_capabilities,
+                 firstMatch: [%{}]
+               }
+             }
 
     request(:post, "#{base_url}session", params)
   end
